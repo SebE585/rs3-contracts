@@ -1,0 +1,32 @@
+[project]
+name = "rs3-contracts"
+version = "1.0.0"
+description = "Contracts (interfaces, schemas) for the RoadSimulator3 ecosystem"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Sébastien Edet" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5"]
+
+[tool.setuptools.package-data]
+"rs3_contracts.dataset_schema" = ["*.yaml"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_ignores = true
+warn_redundant_casts = true
+strict = false

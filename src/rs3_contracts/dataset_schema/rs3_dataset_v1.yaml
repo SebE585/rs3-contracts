@@ -1,0 +1,17 @@
+version: "1.0"
+columns:
+  - name: timestamp
+    dtype: datetime
+    format: iso8601
+    nullable: false
+    description: "UTC timestamp at 10 Hz."
+  - name: lat
+    dtype: float64
+    unit: degree
+    nullable: false
+    description: "WGS84 latitude."
+  - name: lon
+    dtype: float64
+    unit: degree
+    nullable: false
+    description: "WGS84 longitude."

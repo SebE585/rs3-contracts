@@ -1,0 +1,14 @@
+# OS / IDE / caches
+.DS_Store
+.vscode/
+.idea/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+
+# Build / dist
+build/
+dist/
+*.egg-info/
