@@ -22,11 +22,32 @@ dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5"]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.ruff]
-line-length = 100
-
 [tool.mypy]
 python_version = "3.10"
 warn_unused_ignores = true
 warn_redundant_casts = true
 strict = false
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["rs3_contracts*"]
+
+[project.urls]
+Homepage = "https://github.com/SebE585/rs3-contracts"
+Issues = "https://github.com/SebE585/rs3-contracts/issues"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# Active un set de règles utiles (équivalent flake8 + import tidy)
+select = ["E", "F", "I"]
+# Autorise Ruff à appliquer des fixes sûrs (imports inutiles, ordre, etc.)
+fixable = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+# Exemple : autoriser des imports de test non utilisés
+"tests/**.py" = ["F401"]

@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import Protocol, runtime_checkable, Any, Mapping
+
+from typing import Any, Mapping, Protocol, runtime_checkable
+
 
 class Result(tuple):
     """
