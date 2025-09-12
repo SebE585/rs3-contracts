@@ -5,6 +5,66 @@ from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
+# ---------- helpers d'import core2 tolérants + fallbacks ----------
+
+def _import_core2_build_pipeline():
+    """Retourne core2.pipeline.build_pipeline si dispo, sinon None."""
+    try:
+        mod = importlib.import_module("core2.pipeline")
+        if hasattr(mod, "build_pipeline"):
+            return getattr(mod, "build_pipeline")
+    except Exception:
+        pass
+    return None
+
+
+def _import_core2_pipeline_class():
+    """Retourne une classe pipeline exploitable si dispo (priorité PipelineSimulator), sinon None."""
+    try:
+        mod = importlib.import_module("core2.pipeline")
+        for name in ("PipelineSimulator", "Pipeline", "CorePipeline", "PipelineV2", "PipelineImpl"):
+            if hasattr(mod, name):
+                return getattr(mod, name)
+    except Exception:
+        pass
+    return None
+
+
+def _import_core2_context_factory():
+    """Retourne une fabrique/Classe de contexte si dispo, sinon None."""
+    try:
+        mod = importlib.import_module("core2.context")
+        for name in ("Context", "build_context", "make_context", "create_context"):
+            if hasattr(mod, name):
+                return getattr(mod, name)
+    except Exception:
+        pass
+    return None
+
+
+class _MinimalPipeline:
+    def __init__(self, name: str, stages: List[Any]):
+        self.name = name
+        self.stages = stages
+    def run(self, ctx):
+        log = logging.getLogger("core2.pipeline")
+        total = len(self.stages)
+        log.info(f"[PIPELINE] {self.name} — {total} stages")
+        for i, stage in enumerate(self.stages, 1):
+            label = getattr(stage, "__class__", type(stage)).__name__
+            try:
+                log.info(f"[STAGE {i}/{total}] {label} — start")
+                stage.run(ctx)
+                log.info(f"[STAGE {i}/{total}] {label} — OK")
+            except Exception as e:
+                log.error(f"[STAGE {i}/{total}] {label} — CRASH: {e}")
+                raise
+
+
+class _MinimalContext:
+    def __init__(self, cfg: Dict[str, Any] | None = None):
+        self.cfg = cfg or {}
+
 
 # ---------- utilitaires "stops" (simples et génériques) ----------
 
@@ -182,23 +242,43 @@ def build_pipeline(cfg: Dict[str, Any]):
     Cette fonction est volontairement côté "contracts" mais importe core2 ici,
     pour éviter tout import core2 dans les plugins MIT.
     """
-    from core2.pipeline import Pipeline  # import côté builder (AGPL côté déploiement)
+    # 1) Déléguer si core2.pipeline.build_pipeline est présent
+    delegated = _import_core2_build_pipeline()
+    if delegated is not None:
+        return delegated(cfg)
 
+    # 2) Sinon, tenter une classe pipeline connue (PipelineSimulator, Pipeline, ...)
     name = cfg.get("name", "rs3-pipeline")
     stages_specs = cfg.get("stages", []) or []
-
-    # Instancie proprement les stages à partir de symboles/dicts si nécessaire
     instances = [_instantiate_stage(s) for s in stages_specs]
 
-    return Pipeline(name, instances)
+    P = _import_core2_pipeline_class()
+    if P is not None:
+        return P(name, instances)
+
+    # 3) Dernier recours: pipeline minimal local
+    logger.warning("[contracts] Aucun Pipeline core2 détecté — utilisation d'un pipeline minimal (fallback)")
+    return _MinimalPipeline(name, instances)
 
 
 def build_context(cfg: Dict[str, Any]):
     """Fabrique minimale de contexte core2.
     Place l'import ici pour conserver le découplage au niveau des plugins.
     """
-    from core2.context import Context  # import côté builder
-    return Context(cfg)
+    C = _import_core2_context_factory()
+    if C is not None:
+        try:
+            return C(cfg)
+        except TypeError:
+            ctx = C()
+            try:
+                setattr(ctx, "cfg", cfg)
+            except Exception:
+                pass
+            return ctx
+
+    logger.warning("[contracts] Aucun Context core2 détecté — utilisation d'un contexte minimal (fallback)")
+    return _MinimalContext(cfg)
 
 
 # ---------- API principale ----------
